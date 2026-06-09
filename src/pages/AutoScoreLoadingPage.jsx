@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopBar  from '../components/TopBar'
 import SideNav from '../components/SideNav'
@@ -15,6 +15,7 @@ export default function AutoScoreLoadingPage() {
   // OCR (scan mode only)
   const [ocrStatus, setOcrStatus] = useState('waiting')  // waiting|active|done|skipped
   const [ocrWords,  setOcrWords]  = useState(0)
+  const ocrWordsRef = useRef(0)
 
   // Stage state for the 2 sequential agents
   const [srceState,    setSrceState]    = useState('waiting')  // waiting|active|done
@@ -33,6 +34,61 @@ export default function AutoScoreLoadingPage() {
     if (!payload) { navigate('/'); return }
 
     let cancelled = false
+
+    // ── Demo mode: replays fake events for AutoScore ─────────────────────────
+    function mockStream() {
+      const delay = (ms) => new Promise(r => setTimeout(r, ms))
+      const mockEvidence = {
+        thesis_statement: "Friendship is essential for a student's personal growth, emotional support, and social development.",
+        paragraph_count: 4,
+        grammar_errors: 3,
+        spelling_errors: 2,
+        lexical_diversity: 0.54,
+        transitions_detected: ["furthermore", "however", "consequently", "in addition"]
+      }
+      const events = [
+        { ms: 400,   ev: { stage:'ocr', status:'processing' }},
+        { ms: 1500,  ev: { stage:'ocr', status:'done', word_count:312, pages:2 }},
+        { ms: 2500,  ev: { stage:'srce', status:'processing' }},
+        { ms: 5500,  ev: { stage:'srce', status:'done', evidence: mockEvidence }},
+        { ms: 6500,  ev: { stage:'scoring', status:'processing' }},
+        { ms: 9500,  ev: { stage:'final', status:'done',
+            score: 4.0,
+            feedback: 'The essay displays a strong thesis statement and logical structure. Relevant evidence supports the core premises. A few grammatical slips are noted. Vocabulary is standard but clear.',
+            holistic_reasoning: 'The essay states a clear position, maintains it with logical paragraph structure (4 paragraphs), and provides adequate examples. The language is simple but functional. Minor errors do not obscure meaning, resulting in a score of 4.0.',
+            aspect_scores: {
+              'Task Response': 4,
+              'Argument Quality': 4,
+              'Organisation': 4,
+              'Language & Style': 3,
+              'Grammar': 4
+            },
+            agent_comments: {
+              'Task Response': 'Good task alignment.',
+              'Argument Quality': 'Sufficient reasoning provided.',
+              'Organisation': 'Clear 4-paragraph essay layout.',
+              'Language & Style': 'Basic vocabulary, could be elevated.',
+              'Grammar': 'Minor spelling and punctuation issues.'
+            },
+            trait_details: {
+              structure: 'Standard intro-body-conclusion flow.',
+              mechanics: '2 spelling errors, 3 grammar errors flagged.'
+            },
+            evidence: mockEvidence
+        }}
+      ]
+
+      async function run() {
+        const start = Date.now()
+        for (const { ms, ev } of events) {
+          if (cancelled) break
+          const wait = ms - (Date.now() - start)
+          if (wait > 0) await delay(wait)
+          if (!cancelled) handleEvent(ev)
+        }
+      }
+      run()
+    }
 
     async function startStream() {
       try {
@@ -85,8 +141,17 @@ export default function AutoScoreLoadingPage() {
       if (ev.stage === 'ocr') {
         if (ev.status === 'processing') { setOcrStatus('active'); setStatusMsg('Running OCR on scanned pages...') }
         if (ev.status === 'page')       setStatusMsg(`OCR page ${ev.page}/${ev.of} — ${ev.words} words`)
-        if (ev.status === 'done')       { setOcrStatus('done'); setOcrWords(ev.word_count); setStatusMsg(`OCR complete — ${ev.word_count} words`) }
-        if (ev.status === 'skipped')    { setOcrStatus('skipped'); setOcrWords(ev.word_count) }
+        if (ev.status === 'done')       { 
+          setOcrStatus('done'); 
+          setOcrWords(ev.word_count); 
+          ocrWordsRef.current = ev.word_count;
+          setStatusMsg(`OCR complete — ${ev.word_count} words`) 
+        }
+        if (ev.status === 'skipped')    { 
+          setOcrStatus('skipped'); 
+          setOcrWords(ev.word_count);
+          ocrWordsRef.current = ev.word_count;
+        }
       }
 
       // ── Agent 1: SRCE evidence extraction ──
@@ -123,7 +188,7 @@ export default function AutoScoreLoadingPage() {
           agent_comments:   ev.agent_comments || {},
           trait_details:    ev.trait_details  || {},
           evidence:         ev.evidence       || {},
-          word_count:       ocrWords,
+          word_count:       ocrWordsRef.current,
         }))
         setTimeout(() => navigate('/results'), 1200)
       }
@@ -136,9 +201,14 @@ export default function AutoScoreLoadingPage() {
       }
     }
 
-    startStream()
+    if (payload.mode === 'demo') {
+      mockStream()
+    } else {
+      startStream()
+    }
     return () => { cancelled = true }
   }, [navigate])
+
 
   // Count how many evidence traits were extracted (for the JSON receipt badge)
   const evidenceTraitCount = evidence

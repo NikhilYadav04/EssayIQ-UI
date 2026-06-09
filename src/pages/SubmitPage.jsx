@@ -101,6 +101,16 @@ export default function SubmitPage() {
     setTimeout(() => navigate('/loading'), 300)
   }
 
+  // ── Demo mode: no backend needed ─────────────────────────────────────────
+  function handleDemo() {
+    window.__essayiq_payload = { 
+      mode: 'demo',
+      pipeline: pipeline
+    }
+    navigate('/loading')
+  }
+
+
   return (
     <div className="bg-app min-h-screen flex">
       <SideNav />
@@ -350,14 +360,26 @@ export default function SubmitPage() {
               )}
 
               {/* CTA */}
-              <button onClick={handleEvaluate} disabled={loading}
-                className="w-full py-4 mt-1 rounded-xl flex justify-center items-center gap-2.5 font-sans text-[15px] font-semibold transition-all hover:opacity-90 active:scale-[0.99] flex-shrink-0 group shadow-soft"
-                style={{ background: '#2563EB', color: '#ffffff', opacity: loading ? 0.7 : 1 }}>
-                {loading
-                  ? <><span className="material-symbols-outlined animate-spin-slow text-[20px]">sync</span> Initialising...</>
-                  : <><span className="material-symbols-outlined text-[20px] group-hover:translate-x-0.5 transition-transform">bolt</span> Evaluate My Essay</>
-                }
-              </button>
+              <div className="flex gap-3 mt-1 flex-shrink-0">
+                <button onClick={handleEvaluate} disabled={loading}
+                  className="flex-1 py-4 rounded-xl flex justify-center items-center gap-2.5 font-sans text-[15px] font-semibold transition-all hover:opacity-90 active:scale-[0.99] group shadow-soft"
+                  style={{ background: '#2563EB', color: '#ffffff', opacity: loading ? 0.7 : 1 }}>
+                  {loading
+                    ? <><span className="material-symbols-outlined animate-spin-slow text-[20px]">sync</span> Initialising...</>
+                    : <><span className="material-symbols-outlined text-[20px] group-hover:translate-x-0.5 transition-transform">bolt</span> Evaluate My Essay</>
+                  }
+                </button>
+
+                <button onClick={handleDemo} disabled={loading}
+                  className="px-5 py-4 rounded-xl flex justify-center items-center gap-2 font-sans text-[14px] font-semibold transition-all hover:bg-slate-100 border active:scale-[0.99]"
+                  style={{ background: '#F8FAFC', color: '#1E293B', borderColor: '#CBD5E1' }}
+                  title="Try Offline Demo">
+                  <span className="material-symbols-outlined text-[20px]" style={{ color: '#2563EB' }}>play_circle</span>
+                  <span>Try Demo</span>
+                </button>
+              </div>
+
+
             </div>
           </section>
 

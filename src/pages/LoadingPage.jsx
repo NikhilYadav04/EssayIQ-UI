@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopBar  from '../components/TopBar'
 import SideNav from '../components/SideNav'
@@ -33,6 +33,7 @@ function MagicLoadingPage() {
   // OCR card state
   const [ocrStatus,      setOcrStatus]      = useState('waiting')  // waiting | active | done | skipped
   const [ocrWords,       setOcrWords]       = useState(0)
+  const ocrWordsRef = useRef(0)
   const [ocrPageProgress,setOcrPageProgress]= useState(null)  // null | {page, of}
 
   // Agent card states: array of 'waiting' | 'active' | 'done'
@@ -53,6 +54,55 @@ function MagicLoadingPage() {
     if (!payload) { navigate('/'); return }
 
     let cancelled = false
+
+    // ── Demo mode: replays fake events with delays (no backend needed) ──────
+    function mockStream() {
+      const delay = (ms) => new Promise(r => setTimeout(r, ms))
+      const MOCK_SCORES = {
+        'Task Response':    4,
+        'Argument Quality': 3,
+        'Organisation':     4,
+        'Language & Style': 3,
+        'Grammar':          4,
+      }
+      const MOCK_COMMENTS = {
+        'Task Response':    'The essay addresses the prompt clearly. The writer establishes a position on the importance of friendship and maintains it throughout. However, the argument could be more nuanced by acknowledging counterpoints.',
+        'Argument Quality': 'The essay presents relevant reasons but relies largely on general assertions without specific evidence or examples. Development of the central argument would benefit from concrete anecdotes or data.',
+        'Organisation':     'The essay follows a clear introduction–body–conclusion structure. Transitions between paragraphs are functional but could be more sophisticated to improve the flow of ideas.',
+        'Language & Style': 'Vocabulary is appropriate for the topic but largely elementary. Greater lexical variety and use of domain-specific terms would strengthen the stylistic quality of the writing.',
+        'Grammar':          'Grammar is generally correct with occasional minor errors in punctuation and subject-verb agreement. These do not significantly impede comprehension.',
+      }
+      const events = [
+        { ms: 400,   ev: { stage:'ocr', status:'processing' }},
+        { ms: 1400,  ev: { stage:'ocr', status:'page',    page:1, of:2, words:173 }},
+        { ms: 2800,  ev: { stage:'ocr', status:'page',    page:2, of:2, words:139 }},
+        { ms: 4000,  ev: { stage:'ocr', status:'done',    word_count:312, pages:2 }},
+        { ms: 4600,  ev: { stage:'magic', status:'processing' }},
+        { ms: 6500,  ev: { stage:'agent', status:'done', agent_index:0, aspect_name:'Task Response',    score:4, feedback: MOCK_COMMENTS['Task Response'] }},
+        { ms: 9000,  ev: { stage:'agent', status:'done', agent_index:1, aspect_name:'Argument Quality', score:3, feedback: MOCK_COMMENTS['Argument Quality'] }},
+        { ms: 11500, ev: { stage:'agent', status:'done', agent_index:2, aspect_name:'Organisation',     score:4, feedback: MOCK_COMMENTS['Organisation'] }},
+        { ms: 14000, ev: { stage:'agent', status:'done', agent_index:3, aspect_name:'Language & Style', score:3, feedback: MOCK_COMMENTS['Language & Style'] }},
+        { ms: 16500, ev: { stage:'agent', status:'done', agent_index:4, aspect_name:'Grammar',          score:4, feedback: MOCK_COMMENTS['Grammar'] }},
+        { ms: 17500, ev: { stage:'orchestrator', status:'processing' }},
+        { ms: 21000, ev: { stage:'final', status:'done',
+            score: 3.6,
+            feedback: 'This essay presents a clear and sincere perspective on the importance of friendship in student life. The writer maintains a consistent position and organises their thoughts in a logical progression. To reach a higher band, the essay would benefit from deeper argumentation, richer vocabulary, and more precise grammar. Overall, this is a competent response that demonstrates foundational writing skills with room for significant development.',
+            aspect_scores: MOCK_SCORES,
+            agent_comments: MOCK_COMMENTS,
+        }},
+      ]
+
+      async function run() {
+        const start = Date.now()
+        for (const { ms, ev } of events) {
+          if (cancelled) break
+          const wait = ms - (Date.now() - start)
+          if (wait > 0) await delay(wait)
+          if (!cancelled) handleEvent(ev)
+        }
+      }
+      run()
+    }
 
     async function startStream() {
       try {
@@ -121,6 +171,7 @@ function MagicLoadingPage() {
         if (ev.status === 'done') {
           setOcrStatus('done')
           setOcrWords(ev.word_count)
+          ocrWordsRef.current = ev.word_count
           setOcrPageProgress(null)
           const pagesLabel = ev.pages > 1 ? ` across ${ev.pages} pages` : ''
           setStatusMsg(`OCR complete — ${ev.word_count} words extracted${pagesLabel}`)
@@ -128,6 +179,7 @@ function MagicLoadingPage() {
         if (ev.status === 'skipped') {
           setOcrStatus('skipped')
           setOcrWords(ev.word_count)
+          ocrWordsRef.current = ev.word_count
           setStatusMsg(`Essay received — ${ev.word_count} words`)
         }
       }
@@ -165,10 +217,11 @@ function MagicLoadingPage() {
           feedback:       ev.feedback,
           aspect_scores:  ev.aspect_scores  || {},
           agent_comments: ev.agent_comments || {},
-          word_count:     ocrWords,
+          word_count:     ocrWordsRef.current,
         }))
         setTimeout(() => navigate('/results'), 1200)
       }
+
 
       // ── Error ──────────────────────────────────────────────────────────
       if (ev.stage === 'error') {
@@ -178,10 +231,14 @@ function MagicLoadingPage() {
       }
     }
 
-    startStream()
-    return () => {
-      cancelled = true
+
+    if (payload.mode === 'demo') {
+      mockStream()
+    } else {
+      startStream()
     }
+    return () => { cancelled = true }
+
   }, [navigate])
 
   const ocrLabel = ocrStatus === 'skipped' ? 'Text Input' : 'Image Preprocessing'
