@@ -137,7 +137,6 @@ export default function SubmitPage() {
                     Paste your essay below for instant AI-powered feedback across 5 specialist dimensions.
                   </p>
                 </div>
-                <span className="font-sans text-[10px] px-2.5 py-1 rounded-full" style={{ background: '#EFF6FF', color: '#2563EB' }}>INPUT_STREAM_01</span>
               </div>
 
               {/* Pipeline selector */}
@@ -396,6 +395,36 @@ export default function SubmitPage() {
                   ? 'Each essay is evaluated by 5 specialist AI agents in parallel, then synthesised by an orchestrator into a single holistic score.'
                   : 'An evidence-extraction agent first records what the essay contains, then a scoring agent grades from that auditable evidence record.'}
               </p>
+
+              {/* Pipeline flow diagram */}
+              <div className="flex items-center gap-1.5 mt-4 px-3.5 py-3 rounded-xl overflow-x-auto"
+                   style={{ background: '#F8FAFC', border: '1px solid #eef2f8' }}>
+                {(pipeline === 'magic'
+                  ? [
+                      { icon: 'description', label: 'Essay' },
+                      { icon: 'hub',         label: '5 Specialist Agents' },
+                      { icon: 'psychology',  label: 'Orchestrator' },
+                      { icon: 'grade',       label: 'Score' },
+                    ]
+                  : [
+                      { icon: 'description', label: 'Essay' },
+                      { icon: 'plagiarism',  label: 'Evidence Agent' },
+                      { icon: 'fact_check',  label: 'Scoring Agent' },
+                      { icon: 'grade',       label: 'Score' },
+                    ]
+                ).map((step, i, arr) => (
+                  <div key={step.label} className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg"
+                         style={{ background: '#ffffff', border: '1px solid #e2e8f0' }}>
+                      <span className="material-symbols-outlined text-[15px]" style={{ color: '#2563EB' }}>{step.icon}</span>
+                      <span className="font-sans text-[11px] font-medium whitespace-nowrap" style={{ color: '#475569' }}>{step.label}</span>
+                    </div>
+                    {i < arr.length - 1 && (
+                      <span className="material-symbols-outlined text-[14px]" style={{ color: '#94A3B8' }}>arrow_forward</span>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="flex-1 p-5 overflow-y-auto relative z-10 flex flex-col gap-2.5">
               {CRITERIA.map(c => (
@@ -416,7 +445,7 @@ export default function SubmitPage() {
             <div className="p-4 flex-shrink-0 relative z-10" style={{ borderTop: '1px solid #f1f5fb', background: '#F8FAFC' }}>
               <p className="font-sans text-[11.5px] flex items-center gap-2" style={{ color: '#8A96AA' }}>
                 <span className="material-symbols-outlined text-[14px]">info</span>
-                Metrics calibrated against GRE® Analytical Writing benchmarks (v4.2).
+                Each dimension is scored on a 0–6 academic writing rubric.
               </p>
             </div>
           </section>

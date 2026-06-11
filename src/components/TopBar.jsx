@@ -35,17 +35,11 @@ export default function TopBar({ showTimer = false, elapsed = 0, showProgress = 
           </div>
         ) : (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full font-sans text-[12px] font-medium"
-               style={{ background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0' }}>
-            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#10B981' }} />
-            <span>System Status: Optimal</span>
+               style={{ background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE' }}>
+            <span className="material-symbols-outlined text-[15px]">science</span>
+            <span>Research Prototype</span>
           </div>
         )}
-        <button className="w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-[#f1f5fb]" style={{ color: '#64748B' }}>
-          <span className="material-symbols-outlined text-[20px]">notifications</span>
-        </button>
-        <button className="w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-[#f1f5fb]" style={{ color: '#64748B' }}>
-          <span className="material-symbols-outlined text-[20px]">help</span>
-        </button>
       </div>
     </header>
   )

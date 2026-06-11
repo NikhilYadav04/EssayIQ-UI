@@ -18,7 +18,7 @@ export default function SideNav() {
              style={{ background: '#2563EB', color: '#ffffff' }}>E</div>
         <div>
           <div className="font-display text-[17px] font-bold leading-tight" style={{ color: '#1A2340' }}>EssayIQ</div>
-          <div className="font-sans text-[11px]" style={{ color: '#8A96AA' }}>Analytical Rigor</div>
+          <div className="font-sans text-[11px]" style={{ color: '#8A96AA' }}>Multi-Agent Essay Evaluation</div>
         </div>
       </div>
 
@@ -53,20 +53,13 @@ export default function SideNav() {
       </ul>
 
       {/* Footer */}
-      <div className="px-4 mt-auto pt-4" style={{ borderTop: '1px solid #e2e8f0' }}>
-        <ul className="flex flex-col gap-1">
-          {[['menu_book','Docs'],['contact_support','Help Center']].map(([icon, label]) => (
-            <li key={label}>
-              <a href="#" className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-sans text-[13px] transition-all"
-                 style={{ color: '#64748B' }}
-                 onMouseEnter={e => e.currentTarget.style.background = '#f1f5fb'}
-                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                <span className="material-symbols-outlined text-[18px]">{icon}</span>
-                {label}
-              </a>
-            </li>
-          ))}
-        </ul>
+      <div className="px-6 mt-auto pt-4" style={{ borderTop: '1px solid #e2e8f0' }}>
+        <p className="font-sans text-[11px] leading-relaxed" style={{ color: '#8A96AA' }}>
+          Nikhil Yadav · Summer Research 2026
+        </p>
+        <p className="font-sans text-[11px] mt-0.5" style={{ color: '#B7C0CF' }}>
+          MAGIC & AutoScore Pipelines
+        </p>
       </div>
     </nav>
   )
